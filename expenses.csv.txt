@@ -1,0 +1,9 @@
+Date,Amount,Category,Note
+2026-01-01,200,Food,Lunch
+2026-01-02,150,Travel,Bus
+2026-01-03,300,Shopping,Books
+2026-01-04,100,Bills,Recharge
+2026-01-05,250,Food,Dinner
+2026-01-06,180,Travel,Cab
+2026-01-07,220,Shopping,Groceries
+2026-01-08,130,Food,Snacks
