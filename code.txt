@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 
-st.set_page_config(page_title="Questify Finance AI", layout="wide")
+st.set_page_config(page_title="Budgetrix Finance AI", layout="wide")
 
 # ---------- Load or create data ----------
 DATA_FILE = "expenses.csv"
@@ -81,6 +81,7 @@ if not daily.empty:
     ax.plot(daily["Date"], daily["Amount"])
     ax.set_ylabel("₹")
     st.pyplot(fig)
+
 
 
 
