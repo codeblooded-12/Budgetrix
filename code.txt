@@ -1,3 +1,86 @@
-pip install -r requirements.txt
-streamlit run app.py
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestRegressor
+
+st.set_page_config(page_title="Questify Finance AI", layout="wide")
+
+# ---------- Load or create data ----------
+DATA_FILE = "expenses.csv"
+
+try:
+    df = pd.read_csv(DATA_FILE)
+except:
+    df = pd.DataFrame(columns=["Date", "Amount", "Category", "Note"])
+    df.to_csv(DATA_FILE, index=False)
+
+df["Date"] = pd.to_datetime(df["Date"])
+
+# ---------- UI Styling ----------
+st.markdown("""
+<style>
+.title {font-size:40px;font-weight:700;}
+.card {background:#f5f7ff;padding:20px;border-radius:15px;margin:5px;}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown('<div class="title">💰 Questify Finance Dashboard</div>', unsafe_allow_html=True)
+
+# ---------- Add Expense ----------
+st.subheader("➕ Add Expense")
+
+amount = st.number_input("Amount ₹", min_value=0)
+category = st.selectbox("Category", ["Food", "Travel", "Shopping", "Bills", "Other"])
+note = st.text_input("Note")
+
+if st.button("Add Expense"):
+    new = pd.DataFrame([[pd.Timestamp.today(), amount, category, note]],
+                       columns=df.columns)
+    df = pd.concat([df, new])
+    df.to_csv(DATA_FILE, index=False)
+    st.success("Expense added!")
+
+# ---------- Daily totals ----------
+daily = df.groupby(df["Date"].dt.date)["Amount"].sum().reset_index()
+daily.columns = ["Date", "Amount"]
+
+if len(daily) > 7:
+    daily["prev_day"] = daily["Amount"].shift(1)
+    daily["rolling_avg"] = daily["Amount"].rolling(7).mean()
+    daily = daily.dropna()
+
+    X = daily[["prev_day", "rolling_avg"]]
+    y = daily["Amount"]
+
+    model = RandomForestRegressor(n_estimators=200)
+    model.fit(X, y)
+
+    latest = daily.iloc[-1]
+    tomorrow_pred = model.predict([[latest["prev_day"], latest["rolling_avg"]]])[0]
+
+    st.metric("🔮 Tomorrow Prediction", f"₹ {round(tomorrow_pred,2)}")
+
+# ---------- Insights ----------
+if len(daily) > 14:
+    last_week = daily.tail(7)["Amount"].mean()
+    prev_week = daily.iloc[-14:-7]["Amount"].mean()
+
+    trend = "📈 Spending increasing" if last_week > prev_week else "📉 Spending improving"
+
+    top_cat = df.groupby("Category")["Amount"].sum().idxmax()
+
+    col1, col2 = st.columns(2)
+    col1.markdown(f"<div class='card'>{trend}</div>", unsafe_allow_html=True)
+    col2.markdown(f"<div class='card'>💸 Top category: {top_cat}</div>", unsafe_allow_html=True)
+
+# ---------- Chart ----------
+st.subheader("📊 Spending Trend")
+
+if not daily.empty:
+    fig, ax = plt.subplots()
+    ax.plot(daily["Date"], daily["Amount"])
+    ax.set_ylabel("₹")
+    st.pyplot(fig)
+
+
 
