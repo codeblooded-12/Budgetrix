@@ -2,13 +2,14 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
+import calendar
 
 st.set_page_config(page_title="AI Budget Advisor", layout="wide")
 
 st.title("💰 BUDGETRIX ")
 
 # ==============================
-# 📦 Initialize Data Storage
+# 📦 Initialize Storage
 # ==============================
 if "expenses" not in st.session_state:
     st.session_state.expenses = pd.DataFrame(
@@ -17,9 +18,6 @@ if "expenses" not in st.session_state:
 
 if "budget" not in st.session_state:
     st.session_state.budget = 0.0
-
-if "month_start" not in st.session_state:
-    st.session_state.month_start = 1
 
 
 # ==============================
@@ -50,9 +48,9 @@ if st.sidebar.button("Add Expense"):
 
 
 # ==============================
-# 📅 Budget Settings
+# 💰 Monthly Budget Setting
 # ==============================
-st.sidebar.header("📅 Monthly Budget Settings")
+st.sidebar.header("💰 Monthly Budget")
 
 st.session_state.budget = st.sidebar.number_input(
     "Enter Monthly Budget (₹)",
@@ -61,42 +59,44 @@ st.session_state.budget = st.sidebar.number_input(
 )
 
 
+df = st.session_state.expenses.copy()
 
+if not df.empty:
 
+    df["Date"] = pd.to_datetime(df["Date"])
 
     # ==============================
-    # 📊 Monthly Filtering
+    # 📅 Filter Current Month
     # ==============================
     today = datetime.today()
+    current_month = today.month
+    current_year = today.year
 
-    if today.day >= st.session_state.month_start:
-        start_date = datetime(today.year, today.month, st.session_state.month_start)
-    else:
-        if today.month == 1:
-            start_date = datetime(today.year - 1, 12, st.session_state.month_start)
-        else:
-            start_date = datetime(today.year, today.month - 1, st.session_state.month_start)
-
-    monthly_df = df[df["Date"] >= start_date]
+    monthly_df = df[
+        (df["Date"].dt.month == current_month) &
+        (df["Date"].dt.year == current_year)
+    ]
 
     month_spending = monthly_df["Amount"].sum()
     remaining = st.session_state.budget - month_spending
 
     # ==============================
-    # 💳 Budget Metrics
+    # 📊 Budget Metrics
     # ==============================
     col1, col2, col3 = st.columns(3)
 
     col1.metric("💸 Total Spent This Month", f"₹{round(month_spending,2)}")
     col2.metric("💰 Remaining Budget", f"₹{round(remaining,2)}")
-    
+    col3.metric("📅 Current Month", today.strftime("%B %Y"))
 
     # ==============================
-    # ⭐ Safe Daily Limit
+    # ⭐ Safe Daily Spend Limit
     # ==============================
     if st.session_state.budget > 0:
-        days_passed = (today - start_date).days + 1
-        days_remaining = 30 - days_passed
+
+        total_days = calendar.monthrange(current_year, current_month)[1]
+        days_passed = today.day
+        days_remaining = total_days - days_passed
 
         if days_remaining > 0:
             safe_daily_limit = remaining / days_remaining
@@ -106,7 +106,7 @@ st.session_state.budget = st.sidebar.number_input(
         st.info(f"⭐ Safe Daily Spend Limit: ₹{round(safe_daily_limit,2)} per day")
 
     # ==============================
-    # 📊 Daily Spending Chart
+    # 📈 Daily Spending Chart
     # ==============================
     st.subheader("📈 Daily Spending")
 
@@ -122,18 +122,19 @@ st.session_state.budget = st.sidebar.number_input(
 
     category_totals = monthly_df.groupby("Category")["Amount"].sum().reset_index()
 
-    pie = px.pie(
-        category_totals,
-        names="Category",
-        values="Amount",
-        hole=0.4,
-        title="Spending by Category"
-    )
+    if not category_totals.empty:
+        pie = px.pie(
+            category_totals,
+            names="Category",
+            values="Amount",
+            hole=0.4,
+            title="Spending by Category"
+        )
 
-    st.plotly_chart(pie, use_container_width=True)
+        st.plotly_chart(pie, use_container_width=True)
 
     # ==============================
-    # 🧠 AI Financial Insights
+    # 🧠 AI Smart Suggestions
     # ==============================
     st.subheader("🧠 AI Smart Suggestions")
 
@@ -141,6 +142,7 @@ st.session_state.budget = st.sidebar.number_input(
     total_spent = category_totals["Amount"].sum()
 
     if total_spent > 0:
+
         top_row = category_totals.loc[category_totals["Amount"].idxmax()]
         top_category = top_row["Category"]
         top_amount = top_row["Amount"]
@@ -178,7 +180,7 @@ st.session_state.budget = st.sidebar.number_input(
     # 📋 Show Expense Table
     # ==============================
     st.subheader("📋 All Expenses")
-    st.dataframe(df)
+    st.dataframe(monthly_df)
 
 else:
     st.info("Add expenses from the sidebar to get started.")
