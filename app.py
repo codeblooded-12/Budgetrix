@@ -5,7 +5,7 @@ from sklearn.ensemble import RandomForestRegressor
 
 st.set_page_config(page_title="Budgetrix Finance AI", layout="wide")
 
-st.title("💰 Questify ")
+st.title("💰 BUDGETRIX ")
 
 DATA_FILE = "expenses.csv"
 
@@ -91,3 +91,4 @@ st.pyplot(fig)
 # ---------- Raw Data ----------
 st.subheader("📂 Expense History")
 st.dataframe(df.sort_values("Date", ascending=False))
+
