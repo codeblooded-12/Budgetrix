@@ -3,35 +3,26 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 
-# ---------- Page Config ----------
 st.set_page_config(page_title="Budgetrix Finance AI", layout="wide")
 
-# ---------- Load or Create Data ----------
+st.title("💰 Questify ")
+
 DATA_FILE = "expenses.csv"
 
+# ---------- Load Data Safely ----------
 try:
     df = pd.read_csv(DATA_FILE)
 except:
     df = pd.DataFrame(columns=["Date", "Amount", "Category", "Note"])
     df.to_csv(DATA_FILE, index=False)
 
-# Ensure proper structure
 if df.empty:
     df = pd.DataFrame(columns=["Date", "Amount", "Category", "Note"])
-else:
-    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
 
-# ---------- UI Styling ----------
-st.markdown("""
-<style>
-.title {font-size:40px;font-weight:700;margin-bottom:20px;}
-.card {background:#f5f7ff;padding:20px;border-radius:15px;margin:5px;}
-</style>
-""", unsafe_allow_html=True)
+# Convert Date safely
+df["Date"] = pd.to_datetime(df.get("Date"), errors="coerce")
 
-st.markdown('<div class="title">💰 Questify Finance Dashboard</div>', unsafe_allow_html=True)
-
-# ---------- Add Expense Section ----------
+# ---------- Add Expense ----------
 st.subheader("➕ Add Expense")
 
 col1, col2 = st.columns(2)
@@ -52,14 +43,21 @@ if st.button("Add Expense"):
     df.to_csv(DATA_FILE, index=False)
     st.success("✅ Expense added successfully!")
 
-# ---------- If No Data ----------
-if df.empty:
+# ---------- Stop If No Data ----------
+if df.empty or df["Amount"].sum() == 0:
     st.info("No expenses added yet. Add your first expense to unlock analytics 🚀")
     st.stop()
 
-# ---------- Daily Aggregation ----------
-df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+# Remove invalid dates
+df = df.dropna(subset=["Date"])
+
+# ---------- Daily Aggregation (SAFE) ----------
 daily = df.groupby(df["Date"].dt.date)["Amount"].sum().reset_index()
+
+if daily.empty:
+    st.info("Not enough valid data yet.")
+    st.stop()
+
 daily.columns = ["Date", "Amount"]
 
 # ---------- AI Prediction ----------
@@ -68,29 +66,17 @@ if len(daily) > 7:
     daily["rolling_avg"] = daily["Amount"].rolling(7).mean()
     daily = daily.dropna()
 
-    X = daily[["prev_day", "rolling_avg"]]
-    y = daily["Amount"]
+    if not daily.empty:
+        X = daily[["prev_day", "rolling_avg"]]
+        y = daily["Amount"]
 
-    model = RandomForestRegressor(n_estimators=200, random_state=42)
-    model.fit(X, y)
+        model = RandomForestRegressor(n_estimators=200, random_state=42)
+        model.fit(X, y)
 
-    latest = daily.iloc[-1]
-    prediction = model.predict([[latest["prev_day"], latest["rolling_avg"]]])[0]
+        latest = daily.iloc[-1]
+        prediction = model.predict([[latest["prev_day"], latest["rolling_avg"]]])[0]
 
-    st.metric("🔮 Predicted Tomorrow Spending", f"₹ {round(prediction,2)}")
-
-# ---------- Insights ----------
-if len(daily) > 14:
-    last_week = daily.tail(7)["Amount"].mean()
-    prev_week = daily.iloc[-14:-7]["Amount"].mean()
-
-    trend = "📈 Spending Increasing" if last_week > prev_week else "📉 Spending Improving"
-
-    top_category = df.groupby("Category")["Amount"].sum().idxmax()
-
-    col1, col2 = st.columns(2)
-    col1.markdown(f"<div class='card'>{trend}</div>", unsafe_allow_html=True)
-    col2.markdown(f"<div class='card'>💸 Top Category: {top_category}</div>", unsafe_allow_html=True)
+        st.metric("🔮 Predicted Tomorrow Spending", f"₹ {round(prediction,2)}")
 
 # ---------- Spending Chart ----------
 st.subheader("📊 Spending Trend")
@@ -102,6 +88,6 @@ ax.set_xlabel("Date")
 plt.xticks(rotation=45)
 st.pyplot(fig)
 
-# ---------- Show Raw Data ----------
+# ---------- Raw Data ----------
 st.subheader("📂 Expense History")
 st.dataframe(df.sort_values("Date", ascending=False))
