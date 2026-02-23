@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestRegressor
 # ---------- PAGE CONFIG ----------
 st.set_page_config(page_title="Budgetrix Finance AI", layout="wide")
 
-st.title("💰 Budgetrix – AI Finance Dashboard")
+st.title("💰 Budgetrix ")
 
 DATA_FILE = "expenses.csv"
 
@@ -43,13 +43,7 @@ with col1:
         step=100.0
     )
 
-with col2:
-    st.session_state.month_start = st.number_input(
-        "Month Starts On (Day of Month)",
-        min_value=1,
-        max_value=28,
-        value=st.session_state.month_start
-    )
+
 
 # ==============================
 # ➕ ADD EXPENSE
@@ -205,3 +199,4 @@ st.download_button(
     file_name="expenses_export.csv",
     mime="text/csv"
 )
+
