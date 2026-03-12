@@ -8,9 +8,8 @@ st.set_page_config(page_title="AI Budget Advisor", layout="wide")
 
 st.title("💰 BUDGETRIX ")
 
-# ==============================
-# 📦 Initialize Storage
-# ==============================
+
+#  Initialize Storage
 if "expenses" not in st.session_state:
     st.session_state.expenses = pd.DataFrame(
         columns=["Date", "Category", "Amount"]
@@ -20,9 +19,9 @@ if "budget" not in st.session_state:
     st.session_state.budget = 0.0
 
 
-# ==============================
-# ➕ Add Expense Section
-# ==============================
+
+# Add Expense Section
+
 st.sidebar.header("➕ Add New Expense")
 
 expense_date = st.sidebar.date_input("Date", datetime.today())
@@ -47,9 +46,9 @@ if st.sidebar.button("Add Expense"):
     st.sidebar.success("Expense Added!")
 
 
-# ==============================
-# 💰 Monthly Budget Setting
-# ==============================
+
+# Monthly Budget Setting
+
 st.sidebar.header("💰 Monthly Budget")
 
 st.session_state.budget = st.sidebar.number_input(
@@ -65,9 +64,9 @@ if not df.empty:
 
     df["Date"] = pd.to_datetime(df["Date"])
 
-    # ==============================
-    # 📅 Filter Current Month
-    # ==============================
+   
+    # Filter Current Month
+   
     today = datetime.today()
     current_month = today.month
     current_year = today.year
@@ -80,18 +79,17 @@ if not df.empty:
     month_spending = monthly_df["Amount"].sum()
     remaining = st.session_state.budget - month_spending
 
-    # ==============================
-    # 📊 Budget Metrics
-    # ==============================
+    
+    #Budget Metrics
     col1, col2, col3 = st.columns(3)
 
     col1.metric("💸 Total Spent This Month", f"₹{round(month_spending,2)}")
     col2.metric("💰 Remaining Budget", f"₹{round(remaining,2)}")
     col3.metric("📅 Current Month", today.strftime("%B %Y"))
 
-    # ==============================
-    # ⭐ Safe Daily Spend Limit
-    # ==============================
+    
+    # Safe Daily Spend Limit
+    
     if st.session_state.budget > 0:
 
         total_days = calendar.monthrange(current_year, current_month)[1]
@@ -105,9 +103,8 @@ if not df.empty:
 
         st.info(f"⭐ Safe Daily Spend Limit: ₹{round(safe_daily_limit,2)} per day")
 
-    # ==============================
-    # 📈 Daily Spending Chart
-    # ==============================
+    
+    #Daily Spending Chart
     st.subheader("📈 Daily Spending")
 
     daily = monthly_df.groupby("Date")["Amount"].sum().reset_index()
@@ -115,9 +112,9 @@ if not df.empty:
     fig = px.bar(daily, x="Date", y="Amount", title="Daily Spending")
     st.plotly_chart(fig, use_container_width=True)
 
-    # ==============================
-    # 📊 Category Breakdown
-    # ==============================
+   
+    # Category Breakdown
+   
     st.subheader("📊 Category Breakdown")
 
     category_totals = monthly_df.groupby("Category")["Amount"].sum().reset_index()
@@ -133,9 +130,9 @@ if not df.empty:
 
         st.plotly_chart(pie, use_container_width=True)
 
-    # ==============================
-    # 🧠 AI Smart Suggestions
-    # ==============================
+   
+    # AI Smart Suggestions
+   
     st.subheader("🧠 AI Smart Suggestions")
 
     insights = []
@@ -176,11 +173,11 @@ if not df.empty:
     else:
         st.success("✅ Your spending looks balanced this month.")
 
-    # ==============================
-    # 📋 Show Expense Table
-    # ==============================
+    
+    # Show Expense Table
     st.subheader("📋 All Expenses")
     st.dataframe(monthly_df)
 
 else:
     st.info("Add expenses from the sidebar to get started.")
+
